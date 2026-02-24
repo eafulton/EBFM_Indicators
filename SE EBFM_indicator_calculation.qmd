@@ -1,0 +1,526 @@
+---
+title: "Calculating useful indicators of EBFM"
+format:
+  html:
+    toc: true
+    toc-location: left
+    toc-depth: 2
+    toc-expand: 1
+    code-overflow: wrap
+    embed-resources: true
+editor: visual
+execute: 
+  echo: false 
+  warning: false
+  message: false
+  root-dir: "."
+---
+
+# Preface
+
+## Acknowledgements
+
+This code is based on code by Joanne Potts and the original R-Markdown document written by Linda Thomas, Camilla Novaglio, Beth Fulton & Javier Porobic, "Lenfest model indicators - calculation for EwE models", dated 19/07/2021.
+
+## Coding notes
+
+This code is written in Quarto, which enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+By default, all code echoing is switched to `false` to ensure the produced html document is easy to read, including output only not all the code steps. Change `echo: true` in the YAML (box at the top of the qmd file) if you want to see more information.
+
+## Render the Document
+
+to create a html file that includes all of the steps and output click the **Render** button (blue arrow in the menu bar at the top of the quarto code window). This html document will include both text content and the output of embedded code.
+
+## Running Code
+
+If you want to execute the code manually - block by block - run the blocks sequentially. To execute a block of code click the small green arrow in the top right of that block. Many blocks create output files (images of plots). When you reach the end of the blocks, to get the html document you will still need to Render the file.
+
+# Step 1 - Set up
+
+#### Set the File paths - Please enter the following information:
+
+1.  Directory where the ID and consumption csv files are stored and
+2.  Directory where Ecosim output is stored
+3.  Directory where you desire the output of this quarto R file
+
+```{r}
+#| label: set.file.paths
+
+## Clean up the workspace
+rm(list=ls())
+
+## Define the relevant directories 
+# The main directory where all the ID files are stored
+mainDir <- "/Users/ful083/Work/Lenfest_EBFM/case_studies/SE_Aust/EwE_model_output"
+
+# The Ecosim output file directory - this allows for a direcotry with multiple sub directories
+InputDir <- "/Users/ful083/Work/Lenfest_EBFM/case_studies/SE_Aust/EwE_model_output"
+InputsubDir <- "SEF output files/SEF_2021_Example_TimeSeries"
+
+# Sub diretory that contains the simulation with No Fishing. If you are using the burn-in option this will never be used
+BosubDir <- 'SEF output files/SEF_2021_NoFishing'
+
+# The directory where output from this R file will be stored - this allows for a direcotry with multiple sub directories. If you do not want this two step structure set one of the entries to ""
+OutsubDirStep1 <- "Indicator_output" 
+OutsubDirStep2 <- "SEF_2021_version_HistorialTimeSeries" # This is where plots will be saved.
+```
+
+-   Specify files names
+
+```{r}
+#| label: file.names
+
+species_ID_filename <- "Species_ID.csv"
+fleet_ID_filename <- "Fleet_ID.csv"
+consumption_filename <- "SEF2021_Consumption.csv"
+diet_filename <- "SEF2021_Diet.csv"
+```
+
+-   Specify analysis parameters - settings required to run all the following code steps for your system
+
+```{r}
+#| label: params
+
+### Hub species and network analysis parameters
+# use_weights indicates whether you want to use weighted links or 
+# 1-0 (presence-absence) links. Typically set to 1
+use_weights <- 1 
+
+# Whether detailed network information is needed 
+# or just enough to calculate the hub species. Typically set to 0
+detailed_check <- 0
+
+# Whether to strictly use the top 5% of hub scores as hub species or relax this to 10% # For moderately small models of 20-30 groups 5% might give very few returns (1 or 2) # and if these are all plankton that is not help ful so using 10% can be better then
+use_top_5_pct_only <- 0
+
+# Indicate whetehr chlorophyll time series will be read in from an additional file (1)
+# or whether phytoplankton biomass in the Ecosim output will be used (0)
+# This is typically set to 0
+chl_from_file <- 0
+
+### Specifying the unfished state of the system (for calculating indicator reference points)
+bo_in_same_file <- 0 # takes bo from the biomass_annual.csv file - using the row set in bo_yr_row
+
+bo_conservative <- 1 # is bo conservative? 
+# 0 here because when exploitation started system was close to 'natural'
+# 1 if you've already started exploiting and you have to 'estimate' what b0 is
+# It is a question about how well you've estimated b0
+
+bo_yr_row <- 107   # Row used to set the unfished Bo value if in the same file
+# If bo_in_same_file is set to 1 then bo_yr_row is the row of the biomass_annual.csv
+# file from the Ecosim output that wil be treated as Bo. This is an ok approach
+# if you have a long historical simulation that includes an unfished  
+# (or VERY lightly fished) period before fishing begins
+# if bo_in_same_file is set to 0 then you can still specify a year (row in the 
+# biomass_annual.csv file) you would like to treat as you specific Bo year
+# Alternatively you can set bo_yr_row to 0 and it will use the final year of the 
+# unfished simulation as the Bo year
+
+yr_ignore <- 1994 # If using a burn in period this is the year before the historical time series begins - plots will filter out (not show) years before this time 
+# In this case we want the entire period so set to first year of the dataset
+
+# Area of Ecopath model domain in km2 (in this case entire SEF)
+area_model <- 3700000 
+
+```
+
+-   Import the functions needed to run the code
+
+```{r}
+#| label: import.funcs
+
+# source user-defined functions
+source("R-scripts/funcs.R")
+
+```
+
+-   Load the relevant libraries and initialise the output directories
+
+```{r}
+#| label: load.libaries
+#| message: false
+
+load_libraries()
+OutDir <- define_directories(mainDir, OutsubDirStep1, OutsubDirStep2)
+```
+
+-   Set graphics parameters
+
+```{r}
+#| label: set.graphics.params
+
+# set user-defined graphics parameters
+source("R-scripts/graphics.params.R")
+
+```
+
+# Step 1 - Finding Hub species
+
+Undertake the steps to calculate the hub species
+
+-   Determine the Hub species
+
+```{r}
+#| label: calculate.hub.species
+
+# Make sure the consumption and diet dataframes are in the correct format
+results <- clean_up_network_files(consumption_filename, diet_filename,
+                                  species_ID_filename)
+list2env(results, envir = .GlobalEnv)
+ 
+# Do the network analysis to calculate the hub species and update the species_ID.csv file
+df_species <- hub_species(df_consumption, df_diet, df_species, species_ID_filename, OutDir, use_weights, detailed_check, use_top_5_pct_only)
+  
+```
+
+-   List the Hub species. Check they make sense for your system - they should be prey species consumed by many species in the system or predators that link across the top of the food web, consuming prey from many sub-webs.
+
+```{r}
+#| label: list.hub.species
+
+# List those groups that are Hub species
+df_species %>% filter(Classification == "Hub") %>% pull(Group) %>% unique()
+
+```
+
+# Step 2 - Load the data from Ecosim
+
+Import all the data required to calculate the indicators
+
+```{r}
+#| label: import.data
+
+# Load all the needed data from the Ecosim output
+loaded_data <- create_dataframe(InputDir, InputsubDir, df_species,
+                                fleet_ID_filename, bo_in_same_file, bo_yr_row,
+                                bo_conservative, chl_from_file, yr_ignore)
+
+# Unpack the list of dataframes so can parcel out if required
+list2env(loaded_data, envir = .GlobalEnv)
+
+```
+
+# Step 3 - Run diagnostics
+
+Create time series plots of the input time series (from Ecosim) . This helps check everything is as it should be in the "input data" coming from Ecosim. It will also help with interpretation of the final indicator results
+
+```{r}
+#| label: plot.input.data
+
+# Plot the biomass, catch and discard time series loaded in from Ecosim
+# This helps with diagnostics
+df3 <- print_diagnostic_timeseries(df, df3, dfRef, df_fleet, OutDir)
+
+```
+
+Also run multivariate analysis - PCA of catch through time so you can see which years resemble each other and whether there have been major changes in catch composition (another reality check point)
+
+```{r}
+#| label: plot.pca
+
+# PCA of catch composition through time - using spectral decomposition
+pca_results <- PCA_through_time(df, df3)
+
+# Plot results for spectral decomposition - if it was possible to do one 
+# Number of groups > number of years)
+if (pca_results$can_plot > 0) { 
+# Look to see number of PCA axes to retain (scree plot for spectral decomposition)
+#| fig-cap: "Variance explained by PCA axes"
+#| fig-name: paste0(OutDir, PCA-VarExplained)
+#| fig-width: 8
+#| fig-height: 6
+#| dev: png
+#| dpi: 120
+plot(pca_results$pca_results, type="lines")
+
+#| fig-cap: PCA
+# Plot biplot
+pca_p <- plot_biplot(pca_results$pca_results, OutDir)
+print(pca_p)
+}
+
+# PCA using singular value decomposition instead
+res_pca <- PCA_of_composition(pca_results$pca_data)
+
+# Visualize eigenvalues (scree plot). Show the percentage of variances explained by each principal component (for singular value decomposition version).
+#| fig-cap: "Scree plot, eigenvalues for each axis"
+#| fig-name: paste0(OutDir, PCA-scree-plot)
+#| fig-width: 8
+#| fig-height: 6
+#| dev: png
+#| dpi: 120
+print(res_pca$res_plot1)
+
+# Biplot of points on 2D PCA space -  singular value decomposition version of biplot
+#| label: fig-PCA-Biplot-Points-Through-Time
+#| fig-cap: "Biplot of points through time"
+#| fig-name: paste0(OutDir, PCA-Biplot-Points-Through-Time)
+#| fig-width: 8
+#| fig-height: 6
+#| dev: png
+#| dpi: 120
+print(res_pca$res_plot2)
+
+# Variable weighting against the biplots
+#| label: fig-Biplot-attribution
+#| fig-cap: "Variables PCA"
+#| fig-name: paste0(OutDir, Biplot-attribution)
+#| fig-width: 8
+#| fig-height: 6
+#| dev: png
+#| dpi: 120
+#| 
+print(res_pca$res_plot3)
+
+# Dendrogram of PCA factors
+#| label: fig-PCA-score-dendrogram
+#| fig-cap: "Cluster dendrogam"
+#| fig-name: paste0(OutDir, PCA-score-dendrogram)
+#| fig-width: 8
+#| fig-height: 6
+#| dev: png
+#| dpi: 120
+print(res_pca$res_plot4)
+
+# Cluster diagram - map of PCA factors
+#| label: fig-PCA-score-clusters
+#| fig-cap: "Factor map."
+#| fig-name: paste0(OutDir, PCA-score-clusters)
+#| fig-width: 8
+#| fig-height: 6
+#| dev: png
+#| dpi: 120
+print(res_pca$res_plot5)
+
+```
+
+# Step 4 - Calculate EBFM indicators
+
+Calculate system status indicators that have repeatedly been found to be useful in EBFM contexts:
+
+-   Exploitation rate: catch/biomass
+
+-   Inverse of exploitation rate at the system level - 1/(biomass/landings)
+
+-   Biomass ratio - piscivorous:zooplanktivorous fish
+
+-   Biomass ratio - pelagic:demersal fish
+
+-   Coefficient of variation of ecosystem (t) versus individual (i)
+
+-   Mean length in a community or catch- Assumes Linf is in Species_ID.csv file
+
+-   Mean trophic level of community, catch - Trophic level calculated by EwE model based on diet (not biomass).
+
+-   Mean longevity - Assumes MaxAge is in Species_ID.csv file
+
+-   Proportion of large fish (LFI) - based on Linf in Species_ID.csv file
+
+-   Ryther - catch per unit area (divide total catch by area of the model to get this value)
+
+-   Fogarty - total catch / total primary production (units are per mil - o/oo where 0.001 is 1 o/oo)
+
+-   Friedland - use catch: Chlorophyll a (basically doing Fogarty but use Chl a instead if primary production is not available. For EwE calcaulte off primary production but also plot it up based on assuptions of biomass:C -\> c: Chla -\> final calculations
+
+-   Cumulative biomass (survey or catch) vs Trophic level – steepness of the curve and height of the asymptote are indicators of overall system state
+
+```{r}
+#| label: calculate.EBFM.indicators
+
+# Calculate EBFM indicators
+cumB_TL_plot <- calculate_EBFM_indices(df, df3, df_fleet, mortality, biomass, id2, OutDir,
+                                        effort_filename, chl_from_file, yr_ignore)
+
+#| label: fig-Cumulative-TL-plots
+#| fig-cap: "Cumulative biomass-TL plots"
+#| fig-name: paste0(OutDir, PCA-Cumulative-plots-Catch)
+#| fig-width: 8
+#| fig-height: 6
+#| dev: png
+#| dpi: 120
+print(cumB_TL_plot)
+
+```
+
+-   NOAA's Exploitation status- FSSI. The FSSI method looks at B vs Blim (to see if overfished). The FSSI method also looks at B vs Btarg. Both of these bits of information is also used in the calculation of the ETI below. Finally the FSSI method looks at F vs Ftarg (to see if overfishing). The method count the number of species in each state.
+
+```{r}
+#| label: calculate.FSSI
+
+# Calculate NOAA's FFSI
+dfFSSI <- calculation_FSSI(df, dfRef)
+
+```
+
+Calculate system structure indicators:
+
+-   Greenband index - whether disproportionate pressure is being put on ecosystem structure. Checks to see if the pattern of fishing mortality across species matches the predation profile in an unfished system. Ideally species sit within the Greenband (the profiles match). If they are above then there is excessive pressure on that part of the food web. If species sit below the greenband there is the potential for the expansion of exploitation on those species
+
+-   Gao index: how resilient the food web structure is based on the number of trophic linkages and the flow through the different potential sub-webs.
+
+-   Ecosystem Traits Index (ETI) - which uses the status of groups in the different classes (classes = Classification from species_ID.csv) and the resilience of the overall structure to give an index of ecosystem health. This is a 10 point scale.
+
+```{r}
+#| label: calculate.struct.indicators
+
+# Calculate structural indicators - Greenband, Gao's resillience and ETI
+indicator_data <- calculate_struct_indices(df, dfRef, mortality, biomass, df_consumption, df_species, id2)
+
+# Unpack the list of dataframes so can parcel out if required
+list2env(indicator_data, envir = .GlobalEnv)
+
+# Calulcate the final ETI
+do_ETI(dfFSSI, dfScored, Gaoindx, id2)
+  
+# Also plot the heatmap. We do this last as can mess up other plots
+do_heatmap(df, OutDir)
+
+
+```
+
+# Glossary of terms
+
+Criticality analysis – analysis of network structure to identify nodes or segments (nodes and links) that are critical to performance of the network. The flow through the network would severely degrade If these critical components are lost, leading to the failure or fragmentation of the network.
+
+Degree – The number of connections (in or out) of a node in a network.
+
+Degree in – The number of connections into a node in a network.
+
+Degree out – The number of connections out of a node in a network.
+
+Ecological (functional) traits – characteristics of species (morphological, physiological, or phenological) that influences the ecological processes of a species, how it responds to environmental pressures and its role in the structure and function of an ecosystem.
+
+Ecological integrity – the capacity of an ecosystem to support and maintain ecological processes and biodiversity (content and structure).
+
+Ecosystem structure – the network of biotic and abiotic components making up an ecosystem (note in this paper we focus only on the biotic and infer continuance of abiotic connections).
+
+Ecosystem function – the combined set of ecological processes controlling the flux of matter (including nutrients) and energy through an ecosystem.
+
+Ecosystem health – capacity of the ecosystem to maintain structure and function on ecological and evolutionary time scales.
+
+Functional diversity – the diversity of functional traits (from across the components of an ecosystem) that influence function of an ecosystem (across ecological and evolutionary time scales).
+
+Functional groups – group of species sharing common characteristics (traits such as size, longevity, diet, habitat use) and have a similar role in an ecosystem.
+
+Gao index – a scalar defined based on the position of an ecosystem in a space defined by Network heterogeneity and Network density. If the point representing the ecosystem sits in the area below the collapse horizon (see the main text for the description of how to calculate this transition surface) then it receives the lowest possible score for this semi-quantitative index (0.5 in this application). If it sits in the quadrant defined as being above the point of intersection of the collapse horizon and the x and y axes of the space then the system receives the highest possible score (1). If the point is above one of the intercepts but not both (i.e. is above the collapse horizon but not in the fully resilient quadrant) then it receives an intermediate score (0.8 in this application).
+
+Green Band – an acceptable band of exploitation pressure that does not put distortive pressure on ecosystem structure, as it matches the biomass-production profile of the unfished/unperturbed state of that ecosystem. If the human induced mortality for those species-groups (e.g. as represented by catch volume) sees them sit within the band they are being fished in a “structurally sustainable” way. If their point sits below the Green Band there is potential to increase the mortality/extraction without imposing structurally distortive pressure via that species group. If the point sits above the Green Band then “structural overfishing” is occurring and pressure should be reduced.
+
+Hub index – minimum of the rank (lowest numerical value) of a species group based on the network indices of degree, degree out and pagerank. Ranks begin at 1 (the highest rank) for the species group with the highest score for that network index and increase to n (where n is the total number of species groups in the network) for the species group with the lowest value of that index. The species with 5% of species groups in the ecosystem with the lowest hub index (effectively the most highly ranked species) are identified as hub species.
+
+Hub species – highly connected species (nodes in the network) that are found to tie the system together structurally and to facilitate trophic flow across a broad part of the system. The loss of these species would lead to bottlenecks or splinter the network degrading its function.
+
+Node – species in an ecological network (or functional groups in less resolved ecological networks), where connections between the nodes may be due to habitat dependency or feeding interactions.
+
+Network density – how many connections a network has versus the total possible. While in some usage it is a normalised value, here it is implemented as the average weighted degree.
+
+Network heterogeneity – a measure of how variable flows are across the network (calculated here based on the variance in the weighted connections in the network).
+
+Network motif – these patterns of interconnections found in complex networks are in effect the structural representation of processes such as predation or competition, as they are defined through the ways nodes interact (directly and indirectly).
+
+Network symmetry – the in–out weighted-degree correlation coefficient (i.e. whether a node with a high inflow has a high outflow).
+
+Pagerank – This index is a variant of the eigenvector centrality concept and is used by companies, such as Google, to rate the importance of websites (to improve search efficiency and web maintenance prioritisation). The index involves counting the number and quality/strength (weight) of links to a node - more important nodes are cross linked with and support more nodes. We use energy flow through the system, as represented by consumption, as the link weights used to calculate this index.
+
+Responsiveness – whether an indicator reflects change quickly.
+
+Sensitivity – whether an indicator provides a clear and interpretable signal of real change.
+
+Specificity – whether an indicator responds only to change due to a specific stressor.
+
+Structural resilience – the capacity of the network structure to continue functioning without degradation when nodes in the system are perturbed.
+
+Symmetry – see network symmetry above.
+
+Topology – how the ecosystem is structured, what is connected to what, and which aspects (connections, species or functional groups) are most important to its ecological integrity.
+
+***Tables Used in the Calculation of the Structural Indicators***
+
+Table 1: The ETI Qualitative Rating system. The break points used in the qualitative rating are roughly regular (with a small deviation in the Shocks likely band, which is slightly broader than other bands) to avoid any strong non-linearities in the rating system. In contrast, the breakpoints the simple qualitative “Management Guidance” bands is nonlinear and is based on the dynamic responses seen in the simulated ecosystems as they transitioned through the different ETI values.
+
++---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
+| **ETI value** | **Qualitative Rating** | Colour          | **Management Guidance**                                                            |
++---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
+| \< 2.5        | Collapse likely        | Dark red        | **Urgent Intervention:** *Degraded structure and function*                         |
++---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
+| 2.5 – 3.7     | Shocks likely          | Bright red      | Requires immediate large-scale action; likely to take considerable time to recover |
++---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
+| 3.7 – 4.6     | Shocks possible        | Dark Orange     | **Act:** *At risk*                                                                 |
++---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
+| 4.6 – 5.5     | Low integrity          | Orange          | Requires attention; should respond rapidly to intervention                         |
++---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
+| 5.5 – 6.4     | Medium integrity       | Dark yellow     | **Monitor:** *Still stable*                                                        |
++---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
+| 6.4 – 7.3     | Medium-High integrity  | Yellow          | Continue monitoring; no changes required                                           |
++---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
+| 7.3 – 8.2     | High integrity         | Light green     | **Stable:** *Not at risk*                                                          |
++---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
+| 8.2 – 9.1     | Very robust integrity  | Green           | Continue monitoring; potential for increased activity (exploitation)               |
++---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
+| 9.1 – 10      | Close to pristine      | Dark green      |                                                                                    |
++---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
+| \> 10         | Pristine               | Very dark green |                                                                                    |
++---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
+
+Supporting information - tables of logic used during calculation of the structural indicators
+
+Table 2:  Species classification scheme.
+
++--------------------+-------------------------------------------------------------------------------------------------------------------------+------------------------------------+------------+
+| **Classification** | **Description**                                                                                                         | **Target relative biomass levels** | **Weight** |
+|                    |                                                                                                                         |                                    |            |
+|                    |                                                                                                                         | **(vs B~unfished~)**               |            |
++--------------------+-------------------------------------------------------------------------------------------------------------------------+------------------------------------+------------+
+| Vulnerable         | Slow growing, late maturing species susceptible to fishing pressure (such as marine mammals, seabirds and large sharks) | 0.5-0.7                            | 1          |
++--------------------+-------------------------------------------------------------------------------------------------------------------------+------------------------------------+------------+
+| Habitat            | Biogenic habitat forming species                                                                                        | 0.3-0.6                            | 1          |
++--------------------+-------------------------------------------------------------------------------------------------------------------------+------------------------------------+------------+
+| Target             | Primary target species of a fishery                                                                                     | 0.4-0.5                            | 0.5        |
++--------------------+-------------------------------------------------------------------------------------------------------------------------+------------------------------------+------------+
+| Byproduct          | These species have some value and are landed by fisheries but are not the main targeted species                         | 0.35-0.4                           | 1          |
++--------------------+-------------------------------------------------------------------------------------------------------------------------+------------------------------------+------------+
+| Bycatch            | Species that are not retained by the fishery                                                                            | 0.2-0.4                            | 0.1        |
++--------------------+-------------------------------------------------------------------------------------------------------------------------+------------------------------------+------------+
+| Robust             | Fast growing, short lived species (such as productive invertebrates like cephalopods or microfauna like zooplankton)    | 0.4-0.5                            | 0.1        |
++--------------------+-------------------------------------------------------------------------------------------------------------------------+------------------------------------+------------+
+| Hub                | Species identified as being a hub species using the degree and PageRank scores.                                         | 0.6-0.7                            | 1          |
++--------------------+-------------------------------------------------------------------------------------------------------------------------+------------------------------------+------------+
+
+Table 3: Qualitative scoring schemes for position relative to the Green Band and for relative biomass. Default target biomass levels are given in Table S1.
+
++-------------------------------+---------------+-------------------------------------+
+| **Green Band scoring system** |               | **Relative biomass scoring scheme** |
++-------------------------------+---------------+-------------------------------------+
+| Fail: Above Green Band        |               | Fail: below target band             |
++-------------------------------+---------------+-------------------------------------+
+| Acceptable: In Green Band     |               | Acceptable: within target band      |
++-------------------------------+---------------+-------------------------------------+
+| Light: Below Green Band       |               | Light: above target band            |
++-------------------------------+---------------+-------------------------------------+
+
+Table 4: Matrix of possible combinations of fail (F), light (L) and acceptable (A) values of the Green Band (GB) and relative biomass (RelB) and the associated “combination score” (k for use in equation 4), for different categories of species.
+
++-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
+| **GB-RelB** | **Vulnerable** | **Habitat** | **Target** | **Byproduct** | **Bycatch** | **Robust** | **Hub** | **k^\*^** |
++-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
+| **F-F**     |                |             |            |               |             |            |         | 0         |
++-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
+| **F-A**     |                |             |            |               |             |            |         | 0.25      |
++-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
+| **F-L**     |                |             |            |               |             |            |         | 0.5       |
++-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
+| **A-F**     |                |             |            |               |             |            |         | 0.375     |
++-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
+| **A-A**     |                |             |            |               |             |            |         | 1         |
++-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
+| **A-L**     |                |             |            |               |             |            |         | 1.5       |
++-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
+| **L-F**     |                |             |            |               |             |            |         | 0.75      |
++-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
+| **L-A**     |                |             |            |               |             |            |         | 2         |
++-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
+| **L-L**     |                |             |            |               |             |            |         | 2.5       |
++-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
+
+\* Note there is an intentional asymmetry in the values (so a F-A gets a lower value than a A-F), this is because removing distortive pressure is more immediately important than the relative biomass (which can be environmentally influenced by interannual variation); acting to remove pressure will also benefit relative biomass in the longer term.
