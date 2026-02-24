@@ -63,7 +63,7 @@ BosubDir <- 'SEF output files/SEF_2021_NoFishing'
 
 # The directory where output from this R file will be stored - this allows for a direcotry with multiple sub directories. If you do not want this two step structure set one of the entries to ""
 OutsubDirStep1 <- "Indicator_output" 
-OutsubDirStep2 <- "SEF_2021_version_HistorialTimeSeries" # This is where plots will be saved.
+OutsubDirStep2 <- "SEF_2021_Example" # This is where plots will be saved.
 ```
 
 -   Specify files names
