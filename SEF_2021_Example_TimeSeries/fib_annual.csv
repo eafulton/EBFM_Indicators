@@ -1,0 +1,21 @@
+<HEADER software/>,
+EwEVersion,6.7.0.17300 (compiled 6/04/2021)
+Date,29/6/2021 16:45
+<HEADER ecopath/>,
+ModelName,SEF2021
+<HEADER ecosim/>,
+EcosimScenario,base model 2B
+TimeSeries,Time Series SEF2020rev
+StartYear,1994
+<HEADER end/>,
+,
+Data,FIB
+,
+year,value
+1994,-2.59E-07
+1995,-8.76E-05
+1996,-0.000102792
+1997,1.74E-05
+1998,-0.000112342
+1999,2.87E-05
+2000,3.61E-05
