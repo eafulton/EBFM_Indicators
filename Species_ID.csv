@@ -1,0 +1,60 @@
+ID,Group,PelDemID,PISCZOOPL,Linf_cm,MaxAge_yr,IsDetritus,Classification
+1,Toothed whale,TEP,TEP,380,35,0,Vulnerable
+2,Baleen whale,TEP,TEP,1800,70,0,Vulnerable
+3,Seal,TEP,TEP,230,20,0,Vulnerable
+4,Seabirds,TEP,TEP,43,35,0,Vulnerable
+5,Penguins,TEP,TEP,40,6.5,0,Vulnerable
+6,Tuna/billfish,Pelagic,Piscivorous,140,15,0,Vulnerable
+7,Pelagic sharks,Pelagic,Piscivorous,400,32,0,Vulnerable
+8,Demersal sharks,Demersal,Piscivorous,199,53,0,Vulnerable
+9,Rays,Demersal,Piscivorous,201.1,51,0,Vulnerable
+10,Warehous,Demersal,Piscivorous,76,15,0,Target
+11,Redbait,Demersal,Planktivorous,50,10,0,Byproduct
+12,Redfish,Demersal,Planktivorous,51,40,0,Target
+13,Ling,Demersal,Piscivorous,200,30,0,Target
+14,Dories,Demersal,Piscivorous,51,12,0,Target
+15,Jack mackerel,Pelagic,Piscivorous,47,16,0,Target
+16,Jackass morwong,Demersal,Piscivorous,70,50,0,Target
+17,Flathead,Demersal,Piscivorous,65,14,0,Target
+18,Gemfish,Demersal,Piscivorous,135,17,0,Target
+19,ShOceanPerch,Demersal,Piscivorous,47,42,0,Byproduct
+20,Chinaman leatherjacket,Demersal,Piscivorous,100,9,0,Byproduct
+21,Cucumberfish,Demersal,Piscivorous,21,5,0,Byproduct
+22,Whiting,Pelagic,Piscivorous,32,11,0,Target
+23,Cardinal,Demersal,Piscivorous,15,15,0,Byproduct
+24,ShSmInvertFeeder,Demersal,Planktivorous,78,55,0,Bycatch
+25,ShSmPredator,Demersal,Piscivorous,28,18.5,0,Byproduct
+26,ShMedInvertFeeder,Demersal,Planktivorous,90,50,0,Byproduct
+27,ShMedPredator,Demersal,Piscivorous,50,15,0,Byproduct
+28,ShLInvertFeeder,Demersal,Planktivorous,200,10,0,Byproduct
+29,ShLPredator,Demersal,Piscivorous,200,10,0,Byproduct
+30,Blue-eye trevalla,Demersal,Piscivorous,140,42,0,Target
+31,Blue grenadier,Pelagic,Piscivorous,110,25,0,Target
+32,SlopeOceanPerch,Demersal,Piscivorous,44,62,0,Byproduct
+33,Deepsea Cod,Demersal,Piscivorous,80,39,0,Byproduct
+34,Oreos,Demersal,Piscivorous,47,100,0,Target
+35,SlopeSmInvertFeeder,Demersal,Planktivorous,22,25,0,Bycatch
+36,SlopeSmPredator,Demersal,Piscivorous,58,64.5,0,Bycatch
+37,SlopeMInverFeeder,Demersal,Planktivorous,55,64.5,0,Byproduct
+38,SlopeMPredator,Demersal,Piscivorous,65,11,0,Byproduct
+39,SlopeLInvertFeeder,Demersal,Planktivorous,69,9,0,Byproduct
+40,SlopeLPredator,Demersal,Piscivorous,205,8,0,Byproduct
+41,PelSmInvertFeeder,Pelagic,Planktivorous,15.7,6,0,Byproduct
+42,PelMInvertFeeder,Pelagic,Planktivorous,50,16,0,Byproduct
+43,PelMPredator,Pelagic,Piscivorous,50,24,0,Byproduct
+44,PelLInvertFeeder,Pelagic,Planktivorous,47,16,0,Byproduct
+45,PelLPredator,Pelagic,Piscivorous,120,9,0,Target
+46,Mesopelagics,Pelagic,Planktivorous,7,3,0,Bycatch
+47,Squid,Invert,Invert,38,1,0,Byproduct
+48,Commercial Prawns,Invert,Invert,5,4,0,Byproduct
+49,Macrobenthos,Invert,Invert,10,30,0,Bycatch
+50,Megabenthos,Invert,Invert,27,8,0,Byproduct
+51,Polychaeta,Micro,Micro,10,1,0,Bycatch
+52,Gelatinous nekton,Jelly,Jelly,10,0.5,0,Robust
+53,Euphausids,Micro,Micro,3,10,0,Robust
+54,L zooplankton,Micro,Micro,1,1,0,Robust
+55,Sm zooplankton,Micro,Micro,0.1,0.5,0,Robust
+56,Primary producers,Phytoplankton,Phytoplankton,0.01,0.3,0,Robust
+57,Benthic producer,Macroalgae,Macroalgae,500,7,0,Habitat
+58,Detritus,Detritus,Detritus,1,1,1,Detritus
+59,Discards,Detritus,Detritus,1,0.2,1,Detritus
