@@ -127,11 +127,14 @@ match_to_master <- function(names_to_match, species_names, species_clean) {
 ##' @title define directories - checks to see if all output directories exists and creates them if not
 ##' @author Beth Fulton
 define_directories <-function(mainDir, OutsubDirStep1, OutsubDirStep2) {
-  OutDir <- paste(mainDir,"/",OutsubDirStep1,"/", OutsubDirStep2,"/", sep="")
+  OutDir <- file.path(mainDir, OutsubDirStep1, OutsubDirStep2)
   
-  ifelse(!dir.exists(file.path(mainDir, OutsubDirStep1)), dir.create(file.path(mainDir, OutsubDirStep1)), FALSE)
-  ifelse(!dir.exists(file.path(mainDir, OutsubDirStep2)), dir.create(file.path(mainDir, OutsubDirStep2)), FALSE)
-  if(!dir.exists(file.path(OutDir))) dir.create(file.path(OutDir))  
+  if (!dir.exists(file.path(mainDir, OutsubDirStep1))) {
+    dir.create(file.path(mainDir, OutsubDirStep1))
+  }
+  if (!dir.exists(OutDir)) {
+    dir.create(OutDir, recursive = TRUE)
+  } 
   
   return(OutDir)
 }
