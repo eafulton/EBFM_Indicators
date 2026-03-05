@@ -85,7 +85,7 @@ load_libraries <- function() {
   install_load("intergraph")
   install_load("tidygraph")
   install_load("igraph") 
-
+  
 }
 
 
@@ -146,13 +146,13 @@ clean_up_network_files <- function(consumption_filename, diet_filename, species_
   ## Load the data ----
   # consumption data ----
   df_consumption <- read.table(consumption_filename,
-                         header = TRUE, 
-                         sep = ",")
+                               header = TRUE, 
+                               sep = ",")
   
   # diet composition data ----
   df_diet <- read.table(diet_filename,
-                         header = TRUE, 
-                         sep = ",")
+                        header = TRUE, 
+                        sep = ",")
   
   ## functional groups in numeric order with a number assigned
   df_species <- read.table(species_ID_filename,
@@ -228,17 +228,17 @@ clean_up_network_files <- function(consumption_filename, diet_filename, species_
   
   return(list(df_consumption = df_consumption, df_diet = df_diet, df_species = df_species))
 }
-  
+
 # All the steps need to calculate the Hub species and update the Species_ID.csv accordingly
 ##' @title Hub species function - undertakes a networks analysis to identify hub species
 ##' @param file Uses consumption and diet matrices from an Ecopath model to calculate the hub_species
 ##' @author Beth Fulton
 hub_species <- function(df_consumption, df_diet, df_species, species_ID_filename, OutDir, use_weights, detailed_check = 0, use_top_5_pct_only = 1) {
-
+  
   ## Load the data ----
   # consumption data ----
   consData <- df_consumption %>% select(-Group)
-
+  
   # diet composition data ----
   dietData <- df_diet %>% select(-Group)
   
@@ -317,7 +317,7 @@ hub_species <- function(df_consumption, df_diet, df_species, species_ID_filename
   
   #### OPTIONAL NETWORK ANALYSIS - WILL BE REPEATED AND SAVED BELOW
   if (detailed_check > 0) {
-  
+    
     ## Use tidygraph instead - create the network (graph) - can also use as_tbl_graph() to convert an igraph or netwprk 
     # library network to a tidygraph graph
     food_tidy <- as_tbl_graph(g, directed = TRUE)
@@ -379,7 +379,7 @@ hub_species <- function(df_consumption, df_diet, df_species, species_ID_filename
     centrality_all <- degree(g, mode = "all", normalized = TRUE)
     centrality_in <- degree(g, mode = "in", normalized = TRUE)
     centrality_out <- degree(g, mode = "out", normalized = TRUE)
-  
+    
     # Closeness centrality is an evaluation of the proximity of a node to all other
     # nodes in a network, not only the nodes to which it is directly connected
     closeness_in <- closeness(g, mode="in", weights=NA, normalized=T) 
@@ -411,7 +411,7 @@ hub_species <- function(df_consumption, df_diet, df_species, species_ID_filename
     df <- as.data.frame(pstep)
     dfrowsum <- rowSums(df)
     SURF <- dfrowsum / L
-
+    
     # SUPPLY CHAIN CRITICALITY ----
     dims <- dim(consData)
     cpreydim <- dims[[1]]
@@ -469,7 +469,7 @@ hub_species <- function(df_consumption, df_diet, df_species, species_ID_filename
 ##' @author Beth Fulton
 
 Update_Species_ID_File <- function(df_species, df_network, species_ID_filename, use_top_5_pct_only) {
-
+  
   ## FOCUS ON LIVING GROUPS
   df_combined <- cbind(df_species, df_network)
   df_living <- df_combined %>% filter(IsDetritus != 1) # Assumes 0 if not Detritus, 1 if is Detritus
@@ -483,7 +483,7 @@ Update_Species_ID_File <- function(df_species, df_network, species_ID_filename, 
   # Now per row (group) get the minimum rank across degree, degree out and page rank
   df_living <- df_living %>% mutate(
     hub_score = pmin(rank_Degree,rank_DegreeOut,rank_PageRank))
-    
+  
   # Rank teh hub scores and take the top 5% (10% for moderately small models as otehrwise too few to be useful)
   threshold <- ceiling(0.05 * nrow(df_living))
   if(use_top_5_pct_only < 1) {
@@ -512,7 +512,7 @@ Update_Species_ID_File <- function(df_species, df_network, species_ID_filename, 
   # Update the Classification field accordingly
   df_species <- df_species %>%
     mutate( Classification = if_else(
-        isHub == 1, "Hub", Classification)
+      isHub == 1, "Hub", Classification)
     )
   
   # Create the Class_code column of the Dataframe
@@ -782,7 +782,7 @@ create_dataframe <- function(InputDir, InputsubDir, df_species, fleet_ID_filenam
               removals = removals, removals_fleet = removals_fleet, 
               tl = tl, tl_annual = tl_annual, tl_species = tl_species))
 }
-  
+
 ########################### DIAGNOSTIC PLOT FUNCTIONS ###########################
 
 # Function to call all the time series plotting functions
@@ -854,7 +854,7 @@ create_bio_ts_plots <- function(df, dfRef, OutDir) {
 ##' @param file dataframe df - contains the biological time series loaded from EwE output files
 ##' @author Beth Fulton
 create_catch_ts_plots <- function(df3, df_fleet, OutDir) {
-
+  
   # subset out data by fleet
   # to see how many fleets
   df4 <- na.omit(df3) 
@@ -1002,7 +1002,7 @@ create_discard_ts_plots <- function(df3, df_fleet, OutDir) {
     check_name <- this_FleetNames[counter1:counter2]  
     extractC <- dplyr::filter(discardsByFleet, FleetName %in% check_name)
     p_dis2 <- ggplot(extractC, 
-               aes(x = Year,  y = TotalDiscards))+
+                     aes(x = Year,  y = TotalDiscards))+
       geom_line(color = tscolor, linewidth = 1.2) +
       # geom_point() +
       # ylim(ymin, ymax)+ 
@@ -1193,18 +1193,18 @@ PCA_of_composition <- function(SP_as_col) {
   
   # Biplot
   res_plot2 <- fviz_pca_ind(res.pca,
-               col.ind = "contrib", # Color by congtribution
-               gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-               repel = TRUE,     # Avoid text overlapping
-               #label=SP_as_col$Year
+                            col.ind = "contrib", # Color by congtribution
+                            gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+                            repel = TRUE,     # Avoid text overlapping
+                            #label=SP_as_col$Year
   ) +
     labs(title ="PCA", x = "PC1", y = "PC2")
   
   # Weighted variables on biplots
   res_plot3 <- fviz_pca_var(res.pca,
-               col.var = "contrib", # Color by contributions to the PC
-               gradient.cols = PCA_color_gradient,
-               repel = TRUE     # Avoid text overlapping
+                            col.var = "contrib", # Color by contributions to the PC
+                            gradient.cols = PCA_color_gradient,
+                            repel = TRUE     # Avoid text overlapping
   )
   
   # Compute hierarchical clustering on principal components
@@ -1213,20 +1213,20 @@ PCA_of_composition <- function(SP_as_col) {
   
   # Dendrogram of PCA scores
   res_plot4 <- fviz_dend(res.hcpc, 
-            cex = 0.7,                     # Label size
-            palette = "jco",               # Color palette see ?ggpubr::ggpar
-            rect = TRUE, rect_fill = TRUE, # Add rectangle around groups
-            rect_border = "jco",           # Rectangle color
-            labels_track_height = 0.8      # Augment the room for labels
+                         cex = 0.7,                     # Label size
+                         palette = "jco",               # Color palette see ?ggpubr::ggpar
+                         rect = TRUE, rect_fill = TRUE, # Add rectangle around groups
+                         rect_border = "jco",           # Rectangle color
+                         labels_track_height = 0.8      # Augment the room for labels
   )
   
   # Biplot clusters of the PCA factors
   res_plot5 <- fviz_cluster(res.hcpc,
-               repel = TRUE,            # Avoid label overlapping
-               show.clust.cent = TRUE, # Show cluster centers
-               palette = "jco",         # Color palette see ?ggpubr::ggpar
-               ggtheme = theme_bw(),
-               main = "Factor map"
+                            repel = TRUE,            # Avoid label overlapping
+                            show.clust.cent = TRUE, # Show cluster centers
+                            palette = "jco",         # Color palette see ?ggpubr::ggpar
+                            ggtheme = theme_bw(),
+                            main = "Factor map"
   )
   
   # Save all plots
@@ -1242,8 +1242,8 @@ PCA_of_composition <- function(SP_as_col) {
   ggsave(plot = res_plot5, file=outClust)
   
   pca_res <- list(prcomp_pca = res.pca, prcomp_hcpc = res.hcpc, 
-       res_plot1 = res_plot1, res_plot2 = res_plot2, res_plot3 = res_plot3,
-       res_plot4 = res_plot4, res_plot5 = res_plot5)
+                  res_plot1 = res_plot1, res_plot2 = res_plot2, res_plot3 = res_plot3,
+                  res_plot4 = res_plot4, res_plot5 = res_plot5)
   
   
   return(pca_res)
@@ -1304,13 +1304,13 @@ do_heatmap <- function(df, OutDir){
   HeatmapFilename <- paste0(OutDir, "/Landings heatmap.pdf") 
   HeatmapTitle <- paste0("Catch composition heatmap - catch data") 
   p_heat <-heatmaply(drRanked,
-                xlab = "Year",
-                ylab = "Species",
-                main = HeatmapTitle,
-                dendrogram = "row",
-                fontsize_col = 6,
-                fontsize_row = 8
-                #file = HeatmapFilename
+                     xlab = "Year",
+                     ylab = "Species",
+                     main = HeatmapTitle,
+                     dendrogram = "row",
+                     fontsize_col = 6,
+                     fontsize_row = 8
+                     #file = HeatmapFilename
   )
   
   # ggsave(p, file = HeatmapFilename)
@@ -1355,7 +1355,7 @@ calculate_EBFM_indices <-function(df, df3, df_fleet, mortality, biomass, id2, Ou
   # Explotation rate
   plot_exploitation_rate(df, OutDir)
   
- # plot 1/ (biomass/landings)
+  # plot 1/ (biomass/landings)
   plot_biomass_landings(df, OutDir)
   
   # Plot biomass ratios
@@ -1567,7 +1567,7 @@ plot_biomass_ratios <- function(df, OutDir) {
 ##' @title Calculate and plot CV ratio
 ##' @author Beth Fulton
 plot_CV <- function(df, OutDir) {
- 
+  
   ## Make sure have SP_as_col
   CdataS <- df
   
@@ -1978,7 +1978,8 @@ plot_Link_Watson <- function(df, mortality, biomass, id2, chl_from_file, OutDir)
     geom_hline(yintercept = 3, colour = "orange", linetype="dashed", linewidth=0.5) +
     geom_hline(yintercept = 5, colour = "red", linetype="dashed", linewidth=0.5) +
     theme_bw() + theme(axis.title=element_text(size=14,face="bold")) +
-    theme(legend.position = "none") + ggtitle("Ryther index") +
+    theme(legend.position = "none") + 
+    ggtitle("Ryther index") +
     labs(x="Year", y="tonnes km-2 year-1") +
     scale_linetype_manual(values=c("solid", thislinetype, "solid"))
   
@@ -1993,7 +1994,8 @@ plot_Link_Watson <- function(df, mortality, biomass, id2, chl_from_file, OutDir)
     geom_line(aes(linetype = Index), linewidth = 2, colour="darkcyan") + 
     geom_hline(yintercept = 1, colour = "gray47", linetype="dashed", linewidth=0.5) +
     theme_bw() + theme(axis.title=element_text(size=14,face="bold")) +
-    theme(legend.position = "none") + ggtitle("Friedland Ratio") +
+    theme(legend.position = "none") + 
+    ggtitle("Friedland Ratio") +
     labs(x="Year", y="0/00") +
     scale_linetype_manual(values=c("solid", thislinetype, "solid"))
   
@@ -2008,7 +2010,8 @@ plot_Link_Watson <- function(df, mortality, biomass, id2, chl_from_file, OutDir)
     geom_line(aes(linetype = Index), linewidth = 2, colour="darkgoldenrod1") + 
     geom_hline(yintercept = 1, colour = "gray47", linetype="dashed", linewidth=0.5) +
     theme_bw() + theme(axis.title=element_text(size=14,face="bold")) +
-    theme(legend.position = "none") + ggtitle("Fogarty Ratio") +
+    theme(legend.position = "none") + 
+    ggtitle("Fogarty Ratio") +
     labs(x="Year", y="") +
     scale_linetype_manual(values=c("solid", thislinetype, "solid"))
   
@@ -2058,7 +2061,8 @@ plot_CumB_TL <- function(df, tl) {
     dfCDsorted$PropCumB <- dfCDsorted$cumB / TotB
     
     # Fit five-parameter regression - using drc
-    fm1 <- drm(PropCumB~trophic_level, data=dfCDsorted, fct=baro5())
+    fm1 <- drm(PropCumB~trophic_level, 
+               data=dfCDsorted, fct=baro5())
     dfCDsorted$curvefit = predict(fm1)
     
     # Store results for sorted materials
@@ -2156,13 +2160,17 @@ plot_CumB_TL <- function(df, tl) {
   pCBC <- ggplot(dfcat, aes(x = Year, y = landings_tonnes, fill = Group, order = Group)) +
     geom_bar(colour = "black", stat="identity", size = 0.1) +
     scale_fill_manual(values = colPalette) +
-    labs(x="Years", y = "Catch") +  theme(legend.position = "none", text = element_text(size = 12))
+    labs(x="Years", y = "Catch") +  
+    theme(legend.position = "none", 
+          text = element_text(size = 12))
   
   # Plot Biomass
   pCBB <- ggplot(dfcat, aes(x = Year, y = biomass_tonnes, fill = Group, order = Group)) +
     geom_bar(colour = "black", stat="identity", size = 0.1) +
     scale_fill_manual(values = colPalette) +
-    labs(x="Years", y = "Biomass") +  theme(legend.position = "none", text = element_text(size = 12))
+    labs(x="Years", y = "Biomass") +  
+    theme(legend.position = "none", 
+          text = element_text(size = 12))
   
   # Final panel plot
   outPlotName <- paste(OutDir,"/Cumulative-plots-Catch.png",sep="")
@@ -2348,7 +2356,8 @@ do_greenband <-function(dfRef, mortality, biomass, id2) {
     annotate("text", x=1e-4, y=3e+4, label= lm_equation) + 
     annotate("text", x = 1e-4, y=1e+4, label = lm_R2) +
     theme(axis.text=element_text(size=textsize,face="bold"), 
-          axis.title=element_text(size=axistitle,face="bold"))
+          axis.title=element_text(size=axistitle,face="bold")) + 
+    geom_abline(slope=1, intercept = log10(0.5), linetype='dashed')
   
   print(p_ref)
   
@@ -2406,6 +2415,8 @@ do_greenband <-function(dfRef, mortality, biomass, id2) {
                                                            (ifelse(dfScored$Class_Code == 6, 0.5, 0.7)))))))))))
   dfScored$B_Score <- ifelse(dfScored$Rel_B > dfScored$Max_B, "L", (ifelse(dfScored$Rel_B <= dfScored$Min_B, "F", "A")))
   
+  dfScored$DistortScore = factor(dfScored$DistortScore, 
+                                 levels = c('F', "A", "L"))
   # Assumes Thresholds
   # 
   #  CLass    ID    Min   Max
@@ -2425,21 +2436,37 @@ do_greenband <-function(dfRef, mortality, biomass, id2) {
   dfAggScore_Distort <- dfAggScore_Distort %>% dplyr::filter(!is.na(DistortScore))
   dfAggScore_B <- dfAggScore_B %>% dplyr::filter(!is.na(B_Score))
   
+  dfAggScore_B$B_Score = factor(dfAggScore_B$B_Score, 
+                                levels = c('F', "A", "L"))
+  
   # Plot Scores through time - as bar plot
   outPlotName <- paste(OutDir,"/GreenBand-aggregate-score.png",sep="")
-  pA1 <- ggplot(data = dfAggScore_Distort, aes(x = Year, y = n, fill = DistortScore)) + geom_bar(colour = "black", stat="identity", size = 0.1) +
-    scale_fill_manual(values = c("#00AFBB", "#E7B800", "#FC4E07")) + theme_bw() +
+  pA1 <- ggplot(data = dfAggScore_Distort, 
+                aes(x = Year, y = n, fill = DistortScore)) +
+    geom_bar(colour = "black", stat="identity") +
+    scale_fill_manual(values = c("#999999", "#009E73", "#E69F00")) + 
+    theme_bw() +
     labs(x="Years", y = "Ratings") +
-    theme(axis.text=element_text(size=textsize,face="bold"), axis.title=element_text(size=axistitle,face="bold"))
+    theme(axis.text=element_text(size=textsize,face="bold"), 
+          axis.title=element_text(size=axistitle,face="bold"), 
+          legend.position = 'top') + 
+    ggtitle("DistortScore")
   print(pA1)
   ggsave(pA1, file=outPlotName) 
   
   # Plot Scores through time - as bar plot
   outPlotName <- paste(OutDir,"/GreenBand-aggregate-scoreB.png",sep="")
-  pA2 <- ggplot(data = dfAggScore_B, aes(x = Year, y = n, fill = B_Score)) + geom_bar(colour = "black", stat="identity", size = 0.1) +
-    scale_fill_manual(values = c("#00AFBB", "#E7B800", "#FC4E07")) + theme_bw() +
+  
+  pA2 <- ggplot(data = dfAggScore_B, 
+                aes(x = Year, y = n, fill = B_Score)) + 
+    geom_bar(colour = "black", stat="identity") +
+    scale_fill_manual(values = c("#999999", "#009E73", "#E69F00")) + 
+    theme_bw() +
     labs(x="Years", y = "Ratings") +
-    theme(axis.text=element_text(size=textsize,face="bold"), axis.title=element_text(size=axistitle,face="bold"))
+    theme(axis.text=element_text(size=textsize,face="bold"), 
+          axis.title=element_text(size=axistitle,face="bold"), 
+          legend.position = 'top') + 
+    ggtitle("B_Score")
   print(pA2)
   ggsave(pA2, file=outPlotName) 
   
@@ -2481,15 +2508,29 @@ do_greenband <-function(dfRef, mortality, biomass, id2) {
     #ymax <- max(dfThisCode$C) * 10.0
     #xmax <- max(dfThisCode$P) * 10.0
     
-    pA3 <- ggplot(data = dfThisCode, aes(x = Production, y = catch)) + 
-      geom_point(data = dfThisCode, aes(size = Year, color = Group)) +
-      geom_line(data = dfThisCode, aes(color = Group)) +
-      geom_line(data = dfMin, aes(x = P, y = CValue), linetype = "dashed", color = "black") +
-      geom_line(data = dfMax, aes(x = P, y = CValue), linetype = "dashed", color = "black") +
+    ribbon.df = data.frame(Production = dfMax$P, 
+                           max = dfMax$CValue, 
+                           min = dfMin$CValue)
+    
+    pA3 <- ggplot() + 
+      geom_point(data = dfThisCode,
+                 aes(x = Production, y = catch, 
+                     size = Year, color = Group)) +
       scale_size_continuous(range = c(1, 3)) +
-      scale_x_log10(limits=c(xmin, xmax)) + scale_y_log10(limits=c(ymin, ymax)) +
+      scale_x_log10(limits=c(xmin, xmax)) + 
+      scale_y_log10(limits=c(ymin, ymax)) +
       labs(x="Production", y = "Catch") +
-      theme(axis.text=element_text(size=textsize,face="bold"), axis.title=element_text(size=axistitle,face="bold"))
+      theme(axis.text=element_text(size=textsize,face="bold"), 
+            axis.title=element_text(size=axistitle,face="bold")) + 
+      geom_ribbon(data = ribbon.df, 
+                  aes(x = Production, 
+                      ymin = min, ymax = max), 
+                  fill = "lightgreen", 
+                  colour = "lightgreen", 
+                  alpha=0.5) +
+      theme_bw() + 
+      geom_abline(slope = 1, intercept = log10(0.5), linetype = 'dashed')
+    
     
     print(pA3)
     
@@ -2507,7 +2548,7 @@ do_greenband <-function(dfRef, mortality, biomass, id2) {
     dfThisCode <- dfScored %>% dplyr::filter(Class_Code == i)
     outPlotName <- paste(OutDir,"/GreenBand-",dfThisCode$Classification[1],".png",sep="")
     
-    dfThisCode$P<- dfThisCode$Production * area_model
+    dfThisCode$P <- dfThisCode$Production * area_model
     
     dfMin <- BoundsMelt %>% dplyr::filter(Variables == "MinC")
     dfMax <- BoundsMelt %>% dplyr::filter(Variables == "MaxC")
@@ -2522,16 +2563,32 @@ do_greenband <-function(dfRef, mortality, biomass, id2) {
     #ymax <- max(dfThisCode$C) * 10.0
     #xmax <- max(dfThisCode$P) * 10.0
     
-    pA4 <- ggplot(data = dfThisCode, aes(x = P, y = catch_tonnes)) + 
-      geom_point(data = dfThisCode, aes(size = Year, color = Group)) +
-      geom_line(data = dfThisCode, aes(color = Group)) +
-      geom_line(data = dfMin, aes(x = Pa, y = Ca), linetype = "dashed", color = "black") +
-      geom_line(data = dfMax, aes(x = Pa, y = Ca), linetype = "dashed", color = "black") +
+    ribbon.df = data.frame(Production = dfMax$Pa, 
+                           max = dfMax$Ca, 
+                           min = dfMin$Ca)
+    
+    pA4 <- ggplot() + 
+      geom_point(data = dfThisCode, 
+                 aes(x = P, y = catch_tonnes, 
+                     size = Year, color = Group)) +
+      # geom_line(data = dfThisCode, aes(color = Group)) +
+      # geom_line(data = dfMin, aes(x = Pa, y = Ca), linetype = "dashed", color = "black") +
+      # geom_line(data = dfMax, aes(x = Pa, y = Ca), linetype = "dashed", color = "black") +
       scale_size_continuous(range = c(0.5, 2)) +
-      scale_x_log10(limits=c(xmin, xmax)) + scale_y_log10(limits=c(ymin, ymax)) +
+      scale_x_log10(limits=c(xmin, xmax)) + 
+      scale_y_log10(limits=c(ymin, ymax)) +
       labs(x="Production", y = "Catch") +
       guides(col = guide_legend(ncol = 2)) +
-      theme(axis.text=element_text(size=textsize,face="bold"), axis.title=element_text(size=axistitle,face="bold"))
+      theme(axis.text=element_text(size=textsize,face="bold"), 
+            axis.title=element_text(size=axistitle,face="bold")) +
+      geom_ribbon(data = ribbon.df,
+                  aes(x = Production, ymin = min, ymax = max), 
+                  fill = "lightgreen", 
+                  colour = "lightgreen", 
+                  alpha=0.5) +
+      theme_bw() + 
+      geom_abline(slope = 1, intercept = log10(0.5), linetype = 'dashed')
+    
     
     print(pA4)
     
@@ -2550,15 +2607,32 @@ do_greenband <-function(dfRef, mortality, biomass, id2) {
   dfMax$Pa <- dfMax$P * area_model
   dfMax$Ca <- dfMax$CValue * area_model
   
-  pA5 <- ggplot(data = dfThisCode, aes(x = Production, y = catch_tonnes)) + 
-    geom_point(data = dfThisCode, aes(color = Group)) +
-    geom_line(data = dfMax, aes(x = Pa, y = Ca), linetype = "dashed", color = "black") +
-    geom_line(data = dfMin, aes(x = Pa, y = Ca), linetype = "dashed", color = "black") +
+  ribbon.df = data.frame(Production = dfMax$P, 
+                         max = dfMax$Ca, 
+                         min = dfMin$Ca)
+  
+  pA5 <- ggplot() + 
+    geom_point(data = dfThisCode, 
+               aes(x = Production, y = catch_tonnes, 
+                   color = Group)) +
+    # geom_line(data = dfMax, 
+    #           aes(x = Pa, y = Ca), 
+    #           linetype = "dashed", color = "black") +
+    # geom_line(data = dfMin, 
+    #           aes(x = Pa, y = Ca), 
+    #           linetype = "dashed", color = "black") +
     scale_size_continuous(range = c(0.5, 2)) +
     scale_x_log10(limits=c(xmin, xmax)) + scale_y_log10(limits=c(ymin, ymax)) +
     labs(x="Production", y = "Catch") +
     guides(col = guide_legend(ncol = 2)) +
-    theme(axis.text=element_text(size=12,face="bold"), axis.title=element_text(size=textsize,face="bold"))
+    theme(axis.text=element_text(size=12,face="bold"), 
+          axis.title=element_text(size=textsize,face="bold")) +
+    geom_ribbon(data = ribbon.df,
+                aes(x = Production, ymin = min, ymax = max), 
+                fill = "lightgreen", alpha=0.5) +
+    theme_bw() + 
+    # geom_abline(slope = 1, intercept = 0, linetype = 'dashed')
+    NULL
   
   print(pA5)
   
@@ -2792,11 +2866,15 @@ do_Gao <- function(df_consumption, df_species, df) {
   GaoindxPlot <- Gaoindx
   GaoindxPlot <- subset (GaoindxPlot, select = -c(Gao_density, Gao_s, Gao_H, Gao_indx, resil_H))
   GaoindxPlot$n <- 1
+  
   outPlotName <- paste(OutDir,"/Gao_Rating.png",sep="")
-  pG2 <- ggplot(data = GaoindxPlot, aes(x = Year, y = n, fill = GaoScore)) + geom_bar(colour = "black", stat="identity", size = 0.1) +
-    scale_fill_manual(values = c("#00AFBB", "#E7B800", "#FC4E07")) + theme_bw() +
+  pG2 <- ggplot(data = GaoindxPlot, aes(x = Year, y = n, fill = GaoScore)) +
+    geom_bar(colour = "black", stat="identity", size = 0.1) +
+    scale_fill_manual(values = c("#00AFBB", "#E7B800", "#FC4E07")) + 
+    theme_bw() +
     labs(x="Years", y = "Gao Rating") +
-    theme(axis.text=element_text(size=textsize,face="bold"), axis.title=element_text(size=axistitle,face="bold"))
+    theme(axis.text=element_text(size=textsize,face="bold"), 
+          axis.title=element_text(size=axistitle,face="bold"))
   
   print(pG2)
   
@@ -2975,7 +3053,7 @@ do_ETI <- function(dfFSSI, dfScored, GaoIndx, id2){
       colour = "ETI rating"
     ) + 
     theme(axis.text.y=element_text(size=10),axis.text.x=element_text(size=10), axis.title=element_text(size=12,face="bold"), strip.text = element_text(face="bold", size=10))
-
+  
   print(pE2)
   
   ggsave(pE2, file=plot_indx)
