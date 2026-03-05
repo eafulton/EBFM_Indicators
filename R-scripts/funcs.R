@@ -2517,8 +2517,8 @@ do_greenband <-function(dfRef, mortality, biomass, id2) {
                  aes(x = Production, y = catch, 
                      size = Year, color = Group)) +
       scale_size_continuous(range = c(1, 3)) +
-      scale_x_log10(limits=c(xmin, xmax)) + 
-      scale_y_log10(limits=c(ymin, ymax)) +
+      scale_x_log10() + 
+      scale_y_log10() +
       labs(x="Production", y = "Catch") +
       theme(axis.text=element_text(size=textsize,face="bold"), 
             axis.title=element_text(size=axistitle,face="bold")) + 
@@ -2529,7 +2529,8 @@ do_greenband <-function(dfRef, mortality, biomass, id2) {
                   colour = "lightgreen", 
                   alpha=0.5) +
       theme_bw() + 
-      geom_abline(slope = 1, intercept = log10(0.5), linetype = 'dashed')
+      geom_abline(slope = 1, intercept = log10(0.5), linetype = 'dashed') + 
+      coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax))
     
     
     print(pA3)
@@ -2575,8 +2576,8 @@ do_greenband <-function(dfRef, mortality, biomass, id2) {
       # geom_line(data = dfMin, aes(x = Pa, y = Ca), linetype = "dashed", color = "black") +
       # geom_line(data = dfMax, aes(x = Pa, y = Ca), linetype = "dashed", color = "black") +
       scale_size_continuous(range = c(0.5, 2)) +
-      scale_x_log10(limits=c(xmin, xmax)) + 
-      scale_y_log10(limits=c(ymin, ymax)) +
+      scale_x_log10() + 
+      scale_y_log10() +
       labs(x="Production", y = "Catch") +
       guides(col = guide_legend(ncol = 2)) +
       theme(axis.text=element_text(size=textsize,face="bold"), 
@@ -2587,7 +2588,8 @@ do_greenband <-function(dfRef, mortality, biomass, id2) {
                   colour = "lightgreen", 
                   alpha=0.5) +
       theme_bw() + 
-      geom_abline(slope = 1, intercept = log10(0.5), linetype = 'dashed')
+      geom_abline(slope = 1, intercept = log10(0.5), linetype = 'dashed') + 
+      coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax))
     
     
     print(pA4)
