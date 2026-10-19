@@ -124,6 +124,52 @@ area_model <- 10000040
 
 ```
 
+-   Optional - if the model output is from Atlantis rather than EwE, convert it to the EwE style files read below (leave from_atlantis as 0 for EwE models). Alternatively run R-scripts/run_atlantis_to_ewe.R once beforehand. Please check the Species_ID.csv file it creates (see the notes at the top of R-scripts/atlantis_to_ewe_funcs.R)
+
+```{r}
+#| label: atlantis.conversion
+
+from_atlantis <- 0
+
+if (from_atlantis > 0) {
+  source("R-scripts/atlantis_to_ewe_funcs.R")
+
+  # The Atlantis model files and output
+  atlantis_model_dir <- "directory_with_atlantis_model_files"
+  atlantis_out_dir <- file.path(atlantis_model_dir, "output_directory")
+  atlantis_prefix <- "output_prefix"   # As given to Atlantis with -o (without the .nc)
+  atlantis_nofish_out_dir <- NULL      # Output directory of an unfished run (if bo_in_same_file is 0)
+
+  atl_scenario <- convert_atlantis_to_ewe(
+    atlantis_out_dir = atlantis_out_dir, output_prefix = atlantis_prefix,
+    groups_file = file.path(atlantis_model_dir, "groups.csv"),
+    bgm_file = file.path(atlantis_model_dir, "model.bgm"),
+    bio_prm_file = file.path(atlantis_model_dir, "bio.prm"),
+    fisheries_file = file.path(atlantis_model_dir, "fisheries.csv"),
+    init_nc_file = file.path(atlantis_model_dir, "init.nc"),
+    ewe_out_dir = file.path(InputDir, InputsubDir), network_dir = mainDir,
+    scenario_name = InputsubDir, start_year = 1950,
+    pisczoopl_groups = NULL,   # Optional - assign groups yourself e.g. c(FTB = "Piscivorous", FPS = "Planktivorous")
+    consumption_filename = consumption_filename, diet_filename = diet_filename,
+    species_ID_filename = species_ID_filename, fleet_ID_filename = fleet_ID_filename)
+
+  if (!is.null(atlantis_nofish_out_dir)) {
+    atl_nofish <- convert_atlantis_to_ewe(
+      atlantis_out_dir = atlantis_nofish_out_dir, output_prefix = atlantis_prefix,
+      groups_file = file.path(atlantis_model_dir, "groups.csv"),
+      bgm_file = file.path(atlantis_model_dir, "model.bgm"),
+      bio_prm_file = file.path(atlantis_model_dir, "bio.prm"),
+      fisheries_file = file.path(atlantis_model_dir, "fisheries.csv"),
+      ewe_out_dir = file.path(mainDir, BosubDir), scenario_name = BosubDir,
+      start_year = 1950, area_km2 = atl_scenario$area_model)
+  }
+
+  # Area of the Atlantis model domain (non-boundary boxes)
+  area_model <- atl_scenario$area_model
+}
+
+```
+
 -   Import the functions needed to run the code
 
 ```{r}

@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../runs/run_area/SEAP_runs/SEAP_wind/SEAP_Wind_Runs"
+		},
+		{
+			"path": "../../Work/pelagics/Tuna_ETI/Warm_Pool"
+		}
+	]
+}
