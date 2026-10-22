@@ -66,7 +66,7 @@ OutsubDirStep1 <- "top_directory_for_output"
 OutsubDirStep2 <- "sub_directory_where_you_want_r_script_plots_stored_as_saved" # This is where plots will be saved.
 ```
 
--   Specify files names
+- Specify files names
 
 ```{r}
 #| label: file.names
@@ -77,7 +77,7 @@ consumption_filename <- "consumption_from EwE.csv"
 diet_filename <- "diet_from EwE.csv"
 ```
 
--   Specify analysis parameters - settings required to run all the following code steps for your system
+- Specify analysis parameters - settings required to run all the following code steps for your system
 
 ```{r}
 #| label: params
@@ -124,7 +124,7 @@ area_model <- 10000040
 
 ```
 
--   Optional - if the model output is from Atlantis rather than EwE, convert it to the EwE style files read below (leave from_atlantis as 0 for EwE models). Alternatively run R-scripts/run_atlantis_to_ewe.R once beforehand. Please check the Species_ID.csv file it creates (see the notes at the top of R-scripts/atlantis_to_ewe_funcs.R)
+- Optional - if the model output is from Atlantis rather than EwE, convert it to the EwE style files read below (leave from_atlantis as 0 for EwE models). Alternatively run R-scripts/run_atlantis_to_ewe.R once beforehand. Please check the Species_ID.csv file it creates (see the notes at the top of R-scripts/atlantis_to_ewe_funcs.R)
 
 ```{r}
 #| label: atlantis.conversion
@@ -140,6 +140,13 @@ if (from_atlantis > 0) {
   atlantis_prefix <- "output_prefix"   # As given to Atlantis with -o (without the .nc)
   atlantis_nofish_out_dir <- NULL      # Output directory of an unfished run (if bo_in_same_file is 0)
 
+  # Optionally split the age structured groups into stanzas (juveniles and adults by default) - see the notes at
+  # the top of R-scripts/atlantis_to_ewe_funcs.R. The same settings are used for both runs
+  atl_stanzas <- FALSE
+  atl_stanza_groups <- NULL   # NULL for all the age structured groups, or e.g. c("FTS", "FLG")
+  atl_stanza_breaks <- NULL   # Optional - first cohort of each stanza after the first, e.g. list(FTS = c(3, 6))
+  atl_stanza_labels <- NULL   # Optional - e.g. list(FTS = c("larval", "juv", "adult"))
+
   atl_scenario <- convert_atlantis_to_ewe(
     atlantis_out_dir = atlantis_out_dir, output_prefix = atlantis_prefix,
     groups_file = file.path(atlantis_model_dir, "groups.csv"),
@@ -151,7 +158,9 @@ if (from_atlantis > 0) {
     scenario_name = InputsubDir, start_year = 1950,
     pisczoopl_groups = NULL,   # Optional - assign groups yourself e.g. c(FTB = "Piscivorous", FPS = "Planktivorous")
     consumption_filename = consumption_filename, diet_filename = diet_filename,
-    species_ID_filename = species_ID_filename, fleet_ID_filename = fleet_ID_filename)
+    species_ID_filename = species_ID_filename, fleet_ID_filename = fleet_ID_filename,
+    stanzas = atl_stanzas, stanza_groups = atl_stanza_groups, stanza_breaks = atl_stanza_breaks,
+    stanza_labels = atl_stanza_labels)
 
   if (!is.null(atlantis_nofish_out_dir)) {
     atl_nofish <- convert_atlantis_to_ewe(
@@ -161,7 +170,9 @@ if (from_atlantis > 0) {
       bio_prm_file = file.path(atlantis_model_dir, "bio.prm"),
       fisheries_file = file.path(atlantis_model_dir, "fisheries.csv"),
       ewe_out_dir = file.path(mainDir, BosubDir), scenario_name = BosubDir,
-      start_year = 1950, area_km2 = atl_scenario$area_model)
+      start_year = 1950, area_km2 = atl_scenario$area_model,
+      stanzas = atl_stanzas, stanza_groups = atl_stanza_groups, stanza_breaks = atl_stanza_breaks,
+      stanza_labels = atl_stanza_labels)
   }
 
   # Area of the Atlantis model domain (non-boundary boxes)
@@ -170,7 +181,7 @@ if (from_atlantis > 0) {
 
 ```
 
--   Import the functions needed to run the code
+- Import the functions needed to run the code
 
 ```{r}
 #| label: import.funcs
@@ -180,7 +191,7 @@ source("R-scripts/funcs.R")
 
 ```
 
--   Load the relevant libraries and initialise the output directories
+- Load the relevant libraries and initialise the output directories
 
 ```{r}
 #| label: load.libaries
@@ -190,7 +201,7 @@ load_libraries()
 OutDir <- define_directories(mainDir, OutsubDirStep1, OutsubDirStep2)
 ```
 
--   Set graphics parameters
+- Set graphics parameters
 
 ```{r}
 #| label: set.graphics.params
@@ -204,7 +215,7 @@ source("R-scripts/graphics.params.R")
 
 Undertake the steps to calculate the hub species
 
--   Determine the Hub species
+- Determine the Hub species
 
 ```{r}
 #| label: calculate.hub.species
@@ -219,7 +230,7 @@ df_species <- hub_species(df_consumption, df_diet, df_species, species_ID_filena
   
 ```
 
--   List the Hub species. Check they make sense for your system - they should be prey species consumed by many species in the system or predators that link across the top of the food web, consuming prey from many sub-webs.
+- List the Hub species. Check they make sense for your system - they should be prey species consumed by many species in the system or predators that link across the top of the food web, consuming prey from many sub-webs.
 
 ```{r}
 #| label: list.hub.species
@@ -344,31 +355,31 @@ print(res_pca$res_plot5)
 
 Calculate system status indicators that have repeatedly been found to be useful in EBFM contexts:
 
--   Exploitation rate: catch/biomass
+- Exploitation rate: catch/biomass
 
--   Inverse of exploitation rate at the system level - 1/(biomass/landings)
+- Inverse of exploitation rate at the system level - 1/(biomass/landings)
 
--   Biomass ratio - piscivorous:zooplanktivorous fish
+- Biomass ratio - piscivorous:zooplanktivorous fish
 
--   Biomass ratio - pelagic:demersal fish
+- Biomass ratio - pelagic:demersal fish
 
--   Coefficient of variation of ecosystem (t) versus individual (i)
+- Coefficient of variation of ecosystem (t) versus individual (i)
 
--   Mean length in a community or catch- Assumes Linf is in Species_ID.csv file
+- Mean length in a community or catch- Assumes Linf is in Species_ID.csv file
 
--   Mean trophic level of community, catch - Trophic level calculated by EwE model based on diet (not biomass).
+- Mean trophic level of community, catch - Trophic level calculated by EwE model based on diet (not biomass).
 
--   Mean longevity - Assumes MaxAge is in Species_ID.csv file
+- Mean longevity - Assumes MaxAge is in Species_ID.csv file
 
--   Proportion of large fish (LFI) - based on Linf in Species_ID.csv file
+- Proportion of large fish (LFI) - based on Linf in Species_ID.csv file
 
--   Ryther - catch per unit area (divide total catch by area of the model to get this value)
+- Ryther - catch per unit area (divide total catch by area of the model to get this value)
 
--   Fogarty - total catch / total primary production (units are per mil - o/oo where 0.001 is 1 o/oo)
+- Fogarty - total catch / total primary production (units are per mil - o/oo where 0.001 is 1 o/oo)
 
--   Friedland - use catch: Chlorophyll a (basically doing Fogarty but use Chl a instead if primary production is not available. For EwE calcaulte off primary production but also plot it up based on assuptions of biomass:C -\> c: Chla -\> final calculations
+- Friedland - use catch: Chlorophyll a (basically doing Fogarty but use Chl a instead if primary production is not available. For EwE calcaulte off primary production but also plot it up based on assuptions of biomass:C -\> c: Chla -\> final calculations
 
--   Cumulative biomass (survey or catch) vs Trophic level – steepness of the curve and height of the asymptote are indicators of overall system state
+- Cumulative biomass (survey or catch) vs Trophic level – steepness of the curve and height of the asymptote are indicators of overall system state
 
 ```{r}
 #| label: calculate.EBFM.indicators
@@ -388,7 +399,7 @@ print(cumB_TL_plot)
 
 ```
 
--   NOAA's Exploitation status- FSSI. The FSSI method looks at B vs Blim (to see if overfished). The FSSI method also looks at B vs Btarg. Both of these bits of information is also used in the calculation of the ETI below. Finally the FSSI method looks at F vs Ftarg (to see if overfishing). The method count the number of species in each state.
+- NOAA's Exploitation status- FSSI. The FSSI method looks at B vs Blim (to see if overfished). The FSSI method also looks at B vs Btarg. Both of these bits of information is also used in the calculation of the ETI below. Finally the FSSI method looks at F vs Ftarg (to see if overfishing). The method count the number of species in each state.
 
 ```{r}
 #| label: calculate.FSSI
@@ -400,11 +411,11 @@ dfFSSI <- calculation_FSSI(df, dfRef)
 
 Calculate system structure indicators:
 
--   Greenband index - whether disproportionate pressure is being put on ecosystem structure. Checks to see if the pattern of fishing mortality across species matches the predation profile in an unfished system. Ideally species sit within the Greenband (the profiles match). If they are above then there is excessive pressure on that part of the food web. If species sit below the greenband there is the potential for the expansion of exploitation on those species
+- Greenband index - whether disproportionate pressure is being put on ecosystem structure. Checks to see if the pattern of fishing mortality across species matches the predation profile in an unfished system. Ideally species sit within the Greenband (the profiles match). If they are above then there is excessive pressure on that part of the food web. If species sit below the greenband there is the potential for the expansion of exploitation on those species
 
--   Gao index: how resilient the food web structure is based on the number of trophic linkages and the flow through the different potential sub-webs.
+- Gao index: how resilient the food web structure is based on the number of trophic linkages and the flow through the different potential sub-webs.
 
--   Ecosystem Traits Index (ETI) - which uses the status of groups in the different classes (classes = Classification from species_ID.csv) and the resilience of the overall structure to give an index of ecosystem health. This is a 10 point scale.
+- Ecosystem Traits Index (ETI) - which uses the status of groups in the different classes (classes = Classification from species_ID.csv) and the resilience of the overall structure to give an index of ecosystem health. This is a 10 point scale.
 
 ```{r}
 #| label: calculate.struct.indicators
@@ -484,35 +495,27 @@ Topology – how the ecosystem is structured, what is connected to what, and whi
 
 Table 1: The ETI Qualitative Rating system. The break points used in the qualitative rating are roughly regular (with a small deviation in the Shocks likely band, which is slightly broader than other bands) to avoid any strong non-linearities in the rating system. In contrast, the breakpoints the simple qualitative “Management Guidance” bands is nonlinear and is based on the dynamic responses seen in the simulated ecosystems as they transitioned through the different ETI values.
 
-+---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
-| **ETI value** | **Qualitative Rating** | Colour          | **Management Guidance**                                                            |
-+---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
-| \< 2.5        | Collapse likely        | Dark red        | **Urgent Intervention:** *Degraded structure and function*                         |
-+---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
-| 2.5 – 3.7     | Shocks likely          | Bright red      | Requires immediate large-scale action; likely to take considerable time to recover |
-+---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
-| 3.7 – 4.6     | Shocks possible        | Dark Orange     | **Act:** *At risk*                                                                 |
-+---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
-| 4.6 – 5.5     | Low integrity          | Orange          | Requires attention; should respond rapidly to intervention                         |
-+---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
-| 5.5 – 6.4     | Medium integrity       | Dark yellow     | **Monitor:** *Still stable*                                                        |
-+---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
-| 6.4 – 7.3     | Medium-High integrity  | Yellow          | Continue monitoring; no changes required                                           |
-+---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
-| 7.3 – 8.2     | High integrity         | Light green     | **Stable:** *Not at risk*                                                          |
-+---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
-| 8.2 – 9.1     | Very robust integrity  | Green           | Continue monitoring; potential for increased activity (exploitation)               |
-+---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
-| 9.1 – 10      | Close to pristine      | Dark green      |                                                                                    |
-+---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
-| \> 10         | Pristine               | Very dark green |                                                                                    |
-+---------------+------------------------+-----------------+------------------------------------------------------------------------------------+
+|  |  |  |  |
+|----|----|----|----|
+| **ETI value** | **Qualitative Rating** | Colour | **Management Guidance** |
+| \< 2.5 | Collapse likely | Dark red | **Urgent Intervention:** *Degraded structure and function* |
+| 2.5 – 3.7 | Shocks likely | Bright red | Requires immediate large-scale action; likely to take considerable time to recover |
+| 3.7 – 4.6 | Shocks possible | Dark Orange | **Act:** *At risk* |
+| 4.6 – 5.5 | Low integrity | Orange | Requires attention; should respond rapidly to intervention |
+| 5.5 – 6.4 | Medium integrity | Dark yellow | **Monitor:** *Still stable* |
+| 6.4 – 7.3 | Medium-High integrity | Yellow | Continue monitoring; no changes required |
+| 7.3 – 8.2 | High integrity | Light green | **Stable:** *Not at risk* |
+| 8.2 – 9.1 | Very robust integrity | Green | Continue monitoring; potential for increased activity (exploitation) |
+| 9.1 – 10 | Close to pristine | Dark green |  |
+| \> 10 | Pristine | Very dark green |  |
 
 Supporting information - tables of logic used during calculation of the structural indicators
 
 Table 2:  Species classification scheme.
 
 +--------------------+-------------------------------------------------------------------------------------------------------------------------+------------------------------------+------------+
+|                    |                                                                                                                         |                                    |            |
++====================+=========================================================================================================================+====================================+============+
 | **Classification** | **Description**                                                                                                         | **Target relative biomass levels** | **Weight** |
 |                    |                                                                                                                         |                                    |            |
 |                    |                                                                                                                         | **(vs B~unfished~)**               |            |
@@ -534,38 +537,26 @@ Table 2:  Species classification scheme.
 
 Table 3: Qualitative scoring schemes for position relative to the Green Band and for relative biomass. Default target biomass levels are given in Table S1.
 
-+-------------------------------+---------------+-------------------------------------+
-| **Green Band scoring system** |               | **Relative biomass scoring scheme** |
-+-------------------------------+---------------+-------------------------------------+
-| Fail: Above Green Band        |               | Fail: below target band             |
-+-------------------------------+---------------+-------------------------------------+
-| Acceptable: In Green Band     |               | Acceptable: within target band      |
-+-------------------------------+---------------+-------------------------------------+
-| Light: Below Green Band       |               | Light: above target band            |
-+-------------------------------+---------------+-------------------------------------+
+|                               |     |                                     |
+|-------------------------------|-----|-------------------------------------|
+| **Green Band scoring system** |     | **Relative biomass scoring scheme** |
+| Fail: Above Green Band        |     | Fail: below target band             |
+| Acceptable: In Green Band     |     | Acceptable: within target band      |
+| Light: Below Green Band       |     | Light: above target band            |
 
 Table 4: Matrix of possible combinations of fail (F), light (L) and acceptable (A) values of the Green Band (GB) and relative biomass (RelB) and the associated “combination score” (k for use in equation 4), for different categories of species.
 
-+-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
+|  |  |  |  |  |  |  |  |  |
+|----|----|----|----|----|----|----|----|----|
 | **GB-RelB** | **Vulnerable** | **Habitat** | **Target** | **Byproduct** | **Bycatch** | **Robust** | **Hub** | **k^\*^** |
-+-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
-| **F-F**     |                |             |            |               |             |            |         | 0         |
-+-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
-| **F-A**     |                |             |            |               |             |            |         | 0.25      |
-+-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
-| **F-L**     |                |             |            |               |             |            |         | 0.5       |
-+-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
-| **A-F**     |                |             |            |               |             |            |         | 0.375     |
-+-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
-| **A-A**     |                |             |            |               |             |            |         | 1         |
-+-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
-| **A-L**     |                |             |            |               |             |            |         | 1.5       |
-+-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
-| **L-F**     |                |             |            |               |             |            |         | 0.75      |
-+-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
-| **L-A**     |                |             |            |               |             |            |         | 2         |
-+-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
-| **L-L**     |                |             |            |               |             |            |         | 2.5       |
-+-------------+----------------+-------------+------------+---------------+-------------+------------+---------+-----------+
+| **F-F** |  |  |  |  |  |  |  | 0 |
+| **F-A** |  |  |  |  |  |  |  | 0.25 |
+| **F-L** |  |  |  |  |  |  |  | 0.5 |
+| **A-F** |  |  |  |  |  |  |  | 0.375 |
+| **A-A** |  |  |  |  |  |  |  | 1 |
+| **A-L** |  |  |  |  |  |  |  | 1.5 |
+| **L-F** |  |  |  |  |  |  |  | 0.75 |
+| **L-A** |  |  |  |  |  |  |  | 2 |
+| **L-L** |  |  |  |  |  |  |  | 2.5 |
 
 \* Note there is an intentional asymmetry in the values (so a F-A gets a lower value than a A-F), this is because removing distortive pressure is more immediately important than the relative biomass (which can be environmentally influenced by interannual variation); acting to remove pressure will also benefit relative biomass in the longer term.

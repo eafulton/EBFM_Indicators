@@ -56,6 +56,13 @@ include_m0 <- TRUE       # Include non-predation natural mortality (from Specifi
 overwrite_id_files <- FALSE  # If FALSE existing Species_ID / Fleet_ID files are kept and templates written alongside
 catch_source <- "auto"   # Fisheries output to use: "auto", "txt" (CatchPerFishery/DiscardPerFishery.txt), "nc" (CATCH.nc) or "total" (Catch.txt/Discard.txt as one fleet)
 
+### Stanzas - optionally split the age structured groups into stanzas (like EwE multi-stanza groups) ----
+# See the notes at the top of R-scripts/atlantis_to_ewe_funcs.R. The same settings are used for both runs
+stanzas <- FALSE         # TRUE to split the age structured groups (juveniles and adults by default, using <Code>_age_mat)
+stanza_groups <- NULL    # Codes of the groups to split - NULL for all age structured groups, e.g. c("FTS", "FLG")
+stanza_breaks <- NULL    # Optional - first cohort of each stanza after the first, e.g. list(FTS = c(3, 6))
+stanza_labels <- NULL    # Optional - labels of the stanzas, e.g. list(FTS = c("larval", "juv", "adult"))
+
 ########################### CONVERSION ###########################
 
 ### Scenario of interest ----
@@ -69,7 +76,8 @@ atl_scenario <- convert_atlantis_to_ewe(
   consumption_filename = consumption_filename, diet_filename = diet_filename,
   species_ID_filename = species_ID_filename, fleet_ID_filename = fleet_ID_filename,
   overwrite_id_files = overwrite_id_files, pisc_threshold = pisc_threshold, pisczoopl_groups = pisczoopl_groups,
-  include_m0 = include_m0, catch_source = catch_source)
+  include_m0 = include_m0, catch_source = catch_source,
+  stanzas = stanzas, stanza_groups = stanza_groups, stanza_breaks = stanza_breaks, stanza_labels = stanza_labels)
 
 ### Unfished run ----
 if (!is.null(nofish_out_dir)) {
@@ -80,7 +88,8 @@ if (!is.null(nofish_out_dir)) {
     fisheries_file = fisheries_file, init_nc_file = init_nc_file,
     network_dir = NULL, model_name = model_name, scenario_name = BosubDir,
     start_year = start_year, area_km2 = atl_scenario$area_model, include_m0 = include_m0,
-    catch_source = catch_source)
+    catch_source = catch_source,
+    stanzas = stanzas, stanza_groups = stanza_groups, stanza_breaks = stanza_breaks, stanza_labels = stanza_labels)
 }
 
 ########################### SETTINGS FOR THE QMD ###########################
